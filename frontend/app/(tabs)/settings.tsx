@@ -5,25 +5,48 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import * as Notifications from "expo-notifications";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useAuth } from "@/src/auth/AuthContext";
 import { api } from "@/src/api/client";
 import { colors, hardShadow } from "@/src/theme";
 
+// Detect Expo Go: scheduled notifications were removed from Expo Go in SDK 53+.
+// In that environment we gracefully disable the toggle and show a hint.
+const isExpoGo =
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
+// Lazy-load expo-notifications so Expo Go warnings about push tokens
+// (remote notifications removed in SDK 53+) don't surface as console errors
+// on app mount. Local scheduled notifications still work on dev builds / APK.
+async function getNotifications() {
+  if (isExpoGo || Platform.OS === "web") return null;
+  try {
+    return await import("expo-notifications");
+  } catch {
+    return null;
+  }
+}
+
 async function scheduleDailyReminder(hour: number, minute: number) {
-  // Cancel previous daily reminders
-  await Notifications.cancelAllScheduledNotificationsAsync();
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: "Recuerda",
-      body: "Tienes fechas que repasar hoy",
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour,
-      minute,
-    } as any,
-  });
+  if (Platform.OS === "web") return;
+  const N = await getNotifications();
+  if (!N) return;
+  try {
+    await N.cancelAllScheduledNotificationsAsync();
+    await N.scheduleNotificationAsync({
+      content: {
+        title: "Recuerda",
+        body: "Tienes fechas que repasar hoy",
+      },
+      trigger: {
+        type: (N as any).SchedulableTriggerInputTypes?.DAILY ?? "daily",
+        hour,
+        minute,
+      } as any,
+    });
+  } catch (e) {
+    console.warn("schedule failed", e);
+  }
 }
 
 export default function SettingsScreen() {
@@ -52,10 +75,16 @@ export default function SettingsScreen() {
 
   const requestPermissions = async () => {
     if (Platform.OS === "web") return true;
-    const { status } = await Notifications.getPermissionsAsync();
-    if (status === "granted") return true;
-    const req = await Notifications.requestPermissionsAsync();
-    return req.status === "granted";
+    const N = await getNotifications();
+    if (!N) return false;
+    try {
+      const { status } = await N.getPermissionsAsync();
+      if (status === "granted") return true;
+      const req = await N.requestPermissionsAsync();
+      return req.status === "granted";
+    } catch {
+      return false;
+    }
   };
 
   const toggleEnabled = async (v: boolean) => {
@@ -69,7 +98,10 @@ export default function SettingsScreen() {
       await scheduleDailyReminder(hour, minute);
     } else {
       if (Platform.OS !== "web") {
-        await Notifications.cancelAllScheduledNotificationsAsync();
+        const N = await getNotifications();
+        if (N) {
+          try { await N.cancelAllScheduledNotificationsAsync(); } catch {}
+        }
       }
     }
     setEnabled(v);
@@ -110,14 +142,25 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>Notificaciones</Text>
 
-        <View style={[styles.row, hardShadow]}>
+        {isExpoGo && (
+          <View style={[styles.notice, hardShadow]} testID="expo-go-notice">
+            <Ionicons name="information-circle" size={20} color={colors.secondary} />
+            <Text style={styles.noticeText}>
+              Las notificaciones no están disponibles en Expo Go (SDK 53+). Publica
+              la app o usa un build de desarrollo para activarlas.
+            </Text>
+          </View>
+        )}
+
+        <View style={[styles.row, hardShadow, isExpoGo && styles.rowDisabled]}>
           <View style={styles.rowLeft}>
             <Ionicons name="notifications" size={20} color={colors.textPrimary} />
             <Text style={styles.rowText}>Recordatorio diario</Text>
           </View>
           <Switch
-            value={enabled}
+            value={enabled && !isExpoGo}
             onValueChange={toggleEnabled}
+            disabled={isExpoGo}
             trackColor={{ true: colors.good, false: colors.borderSubtle }}
             thumbColor={colors.surface}
             testID="toggle-notifications"
@@ -125,9 +168,9 @@ export default function SettingsScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.row, hardShadow, !enabled && styles.rowDisabled]}
-          onPress={() => enabled && setShowPicker(true)}
-          disabled={!enabled}
+          style={[styles.row, hardShadow, (!enabled || isExpoGo) && styles.rowDisabled]}
+          onPress={() => enabled && !isExpoGo && setShowPicker(true)}
+          disabled={!enabled || isExpoGo}
           testID="picker-notification-time"
         >
           <View style={styles.rowLeft}>
@@ -205,6 +248,12 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "space-between", borderRadius: 0,
   },
   rowDisabled: { opacity: 0.5 },
+  notice: {
+    flexDirection: "row", alignItems: "flex-start", gap: 10,
+    backgroundColor: "#E6F0FF", borderWidth: 2, borderColor: colors.border,
+    padding: 12, borderRadius: 0,
+  },
+  noticeText: { flex: 1, fontSize: 13, color: colors.textPrimary, lineHeight: 18 },
   rowLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
   rowText: { fontSize: 15, fontWeight: "700", color: colors.textPrimary },
   rowValue: { fontSize: 15, fontWeight: "800", color: colors.secondary },

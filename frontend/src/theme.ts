@@ -27,9 +27,7 @@ export const formatDateEs = (day: number, month: number) =>
   `${day} de ${MONTHS_ES[month - 1].toLowerCase()}`;
 
 export const hardShadow = {
-  shadowColor: "#0F172A",
-  shadowOffset: { width: 4, height: 4 },
-  shadowOpacity: 1,
-  shadowRadius: 0,
+  // RN 0.81 prefers `boxShadow` over the deprecated `shadow*` props.
+  boxShadow: "4px 4px 0px 0px #0F172A",
   elevation: 6,
 };
