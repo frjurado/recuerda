@@ -1,0 +1,168 @@
+{
+  "theme": "LIGHT",
+  "archetype": "3 (Pastel & Soft) modified with Neo-Brutalist Hard Edges",
+  "core_principles": {
+    "corners": "CRITICAL: NO rounded corners anywhere. Use `rounded-none` or `borderRadius: 0` exclusively. Every button, card, input, and modal MUST be perfectly rectangular with sharp 90-degree corners.",
+    "language": "CRITICAL: Interface MUST be 100% in Spanish.",
+    "color_psychology": "Light, bright (colores claros) but structured. Use a stark white/off-white background with highly saturated pastel accent colors to designate different functions, bounded by hard black/dark-slate borders for contrast.",
+    "shadows": "Hard, offset geometric shadows (e.g., `4px 4px 0px #0F172A`) to emphasize the sharp UI instead of soft blurs.",
+    "testing": "All interactive and key informational elements MUST include a `data-testid` attribute (e-g., `data-testid=\"login-button\"`, `data-testid=\"anki-good-btn\"`)."
+  },
+  "typography": {
+    "strategy": "Swiss Brutalist (Tech / Friendly)",
+    "font_families": {
+      "headings": "Outfit, sans-serif",
+      "body": "Work Sans, sans-serif"
+    },
+    "hierarchy": {
+      "h1": "text-4xl md:text-5xl font-black tracking-tighter text-slate-900",
+      "h2": "text-2xl md:text-3xl font-bold tracking-tight text-slate-900",
+      "h3": "text-xl font-bold text-slate-900",
+      "body": "text-base font-normal leading-relaxed text-slate-700",
+      "small_label": "text-xs font-bold tracking-[0.1em] uppercase text-slate-600"
+    }
+  },
+  "colors": {
+    "background": {
+      "primary": "#FAFAFA",
+      "secondary": "#FFFFFF",
+      "festive_overlay": "rgba(255, 217, 61, 0.15)"
+    },
+    "surface": {
+      "card": "#FFFFFF",
+      "input": "#FFFFFF"
+    },
+    "borders": {
+      "primary": "#0F172A",
+      "subtle": "#CBD5E1"
+    },
+    "text": {
+      "primary": "#0F172A",
+      "secondary": "#475569",
+      "inverse": "#FFFFFF"
+    },
+    "brand_accents": {
+      "primary": "#FFD93D",
+      "secondary": "#4D96FF"
+    },
+    "anki_system": {
+      "again": "#FF6B6B",
+      "hard": "#FFB84C",
+      "good": "#28C76F",
+      "easy": "#4D96FF"
+    },
+    "actions": {
+      "call": "#4D96FF",
+      "message": "#28C76F"
+    }
+  },
+  "spacing_and_layout": {
+    "padding": {
+      "screen": "p-6 md:p-8",
+      "card": "p-6 md:p-8",
+      "button": "py-4 px-6"
+    },
+    "gap": {
+      "standard": "gap-6",
+      "dense": "gap-4"
+    },
+    "borders": {
+      "width_standard": "2px",
+      "width_thick": "4px"
+    },
+    "shadows": {
+      "hard_solid": "4px 4px 0px 0px #0F172A",
+      "hard_solid_hover": "2px 2px 0px 0px #0F172A"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#FFD93D] text-slate-900 border-2 border-slate-900 rounded-none shadow-[4px_4px_0px_#0F172A] active:shadow-[2px_2px_0px_#0F172A] active:translate-y-[2px] active:translate-x-[2px] transition-all font-bold uppercase tracking-wide",
+      "secondary": "bg-white text-slate-900 border-2 border-slate-900 rounded-none shadow-[4px_4px_0px_#0F172A] active:shadow-[2px_2px_0px_#0F172A] transition-all font-bold",
+      "anki_again": "bg-[#FF6B6B] text-white border-2 border-slate-900 rounded-none font-bold",
+      "anki_hard": "bg-[#FFB84C] text-slate-900 border-2 border-slate-900 rounded-none font-bold",
+      "anki_good": "bg-[#28C76F] text-slate-900 border-2 border-slate-900 rounded-none font-bold",
+      "anki_easy": "bg-[#4D96FF] text-white border-2 border-slate-900 rounded-none font-bold",
+      "google_login": "bg-white text-slate-900 border-2 border-slate-900 rounded-none shadow-[4px_4px_0px_#0F172A] flex items-center justify-center gap-3 py-4"
+    },
+    "inputs": {
+      "standard": "bg-white border-2 border-slate-900 rounded-none px-4 py-3 text-slate-900 focus:outline-none focus:ring-0 focus:shadow-[4px_4px_0px_#0F172A] transition-all"
+    },
+    "cards": {
+      "standard": "bg-white border-2 border-slate-900 rounded-none p-6 shadow-[6px_6px_0px_#0F172A]",
+      "flashcard": "bg-white border-4 border-slate-900 rounded-none p-8 min-h-[350px] flex flex-col justify-center items-center text-center shadow-[8px_8px_0px_#0F172A]"
+    }
+  },
+  "screens": {
+    "login": {
+      "layout": "Centered flex layout. Abstract pastel background overlay.",
+      "elements": [
+        "Brand Logo/Title (e.g., 'Recuerda')",
+        "Google Login Button (`data-testid=\"btn-login-google\"`)",
+        "Subtext explaining the Anki spaced-repetition value proposition"
+      ]
+    },
+    "dashboard_flashcards": {
+      "layout": "Single card focus taking up 70% of viewport. Anki controls docked at the bottom.",
+      "elements": [
+        "Date/Event indicator on card",
+        "Hidden answer reveal button",
+        "4-button SM-2 row (Again, Hard, Good, Easy) visible ONLY after revealing",
+        "Progress indicator (e.g., 3/10 reviews today)"
+      ]
+    },
+    "festive_flashcard": {
+      "layout": "Fullscreen immersive modal, confetti background.",
+      "elements": [
+        "Person's name in massive H1",
+        "'¡Hoy es el día!' celebratory text",
+        "Primary action: 'Llamar' (Phone icon)",
+        "Secondary action: 'Escribir' (Message icon)",
+        "Close/Dismiss to regular queue"
+      ]
+    },
+    "calendar": {
+      "layout": "Strict square grid. No rounded highlight pills for days—use solid square color blocks for days with events.",
+      "elements": [
+        "Month/Year toggler",
+        "Grid of days",
+        "List of events below the selected date"
+      ]
+    },
+    "event_form": {
+      "layout": "Standard form. Reminder: No year field allowed, only Day, Month, Name, Type (Birthday/Anniversary).",
+      "elements": [
+        "Input Name (`data-testid=\"input-event-name\"`)",
+        "Select Type (`data-testid=\"select-event-type\"`)",
+        "Select Day/Month (NO Year) (`data-testid=\"select-event-date\"`)",
+        "Save Button (`data-testid=\"btn-save-event\"`)"
+      ]
+    },
+    "settings": {
+      "layout": "List layout with hard dividers (2px black borders).",
+      "elements": [
+        "Toggle Notifications (`data-testid=\"toggle-notifications\"`)",
+        "Time Picker for daily reminder (`data-testid=\"picker-notification-time\"`)"
+      ]
+    }
+  },
+  "image_urls": {
+    "login_background": {
+      "url": "https://images.pexels.com/photos/7134982/pexels-photo-7134982.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Smooth blend of pastel colors in a vertical gradient pattern. Use as a subtle background behind the login screen with a white opacity overlay if needed."
+    },
+    "festive_confetti": {
+      "url": "https://images.unsplash.com/photo-1564822260554-877d6583f01c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1Mjh8MHwxfHNlYXJjaHwzfHxtaW5pbWFsaXN0JTIwY29uZmV0dGklMjBjZWxlYnJhdGlvbnxlbnwwfHx8fDE3Nzg4NjUzNjB8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Colorful confetti on a white background. Use this on the Festive Flashcard for birthdays to give it a celebratory vibe."
+    }
+  },
+  "instructions_to_main_agent": [
+    "CRITICAL: The entire UI must be in Spanish. Translating component texts is mandatory.",
+    "CRITICAL: Avoid `borderRadius` entirely. Use `borderRadius: 0` or `rounded-none`. We are implementing a 'sharp' Neo-Brutalist look.",
+    "CRITICAL: Date inputs should NEVER collect or display the year. Only day and month.",
+    "Use standard React Native / Expo components, but style them with strict borders (2px or 4px solid #0F172A) and hard offset box-shadows to match the design language.",
+    "Include 'data-testid' on every button, input, toggle, and key text element.",
+    "Implement the Anki spaced repetition interface precisely: show Question first, then a 'Reveal Answer' button, then show the 4 SM2 buttons (Again, Hard, Good, Easy) replacing the reveal button.",
+    "For the Calendar view, use a simple grid layout with strict square styling, no rounded selections."
+  ]
+}
