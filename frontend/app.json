@@ -14,9 +14,14 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#000"
+        "backgroundColor": "#FAFAFA"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "POST_NOTIFICATIONS",
+        "SCHEDULE_EXACT_ALARM",
+        "VIBRATE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -25,15 +30,17 @@
     },
     "plugins": [
       "expo-router",
+      "expo-notifications",
       [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#000"
+          "backgroundColor": "#FAFAFA"
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true
