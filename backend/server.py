@@ -328,8 +328,19 @@ async def build_due_cards(user_id: str) -> List[dict]:
         {"user_id": user_id, "due_at": {"$lte": datetime.now(timezone.utc)}},
         {"_id": 0},
     ).to_list(1000)
+
+    # Batch-fetch all referenced events in a single query (avoids N+1).
+    sm2_event_ids = list({c["event_id"] for c in sm2_cards})
+    events_by_id: dict = {}
+    if sm2_event_ids:
+        cursor = db.events.find(
+            {"event_id": {"$in": sm2_event_ids}, "user_id": user_id},
+            {"_id": 0},
+        )
+        events_by_id = {e["event_id"]: e async for e in cursor}
+
     for c in sm2_cards:
-        ev = await db.events.find_one({"event_id": c["event_id"], "user_id": user_id}, {"_id": 0})
+        ev = events_by_id.get(c["event_id"])
         if not ev:
             continue
         out.append({
