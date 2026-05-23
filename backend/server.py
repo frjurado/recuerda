@@ -9,7 +9,8 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, timedelta, timezone, date
-import httpx
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_requests
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 # ---------------------- Models ----------------------
 
 class SessionRequest(BaseModel):
-    session_id: str
+    id_token: str
 
 class UserOut(BaseModel):
     user_id: str
@@ -182,21 +183,25 @@ def sm2_update(card: dict, grade: int) -> dict:
 
 @api_router.post("/auth/session")
 async def auth_session(payload: SessionRequest):
-    """Exchange Emergent session_id for our session_token."""
-    async with httpx.AsyncClient(timeout=15.0) as cli:
-        resp = await cli.get(
-            "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
-            headers={"X-Session-ID": payload.session_id},
+    """Verify Google ID token and create/update local session."""
+    GOOGLE_CLIENT_ID = os.environ["GOOGLE_CLIENT_ID"]
+    try:
+        idinfo = google_id_token.verify_oauth2_token(
+            payload.id_token,
+            google_requests.Request(),
+            GOOGLE_CLIENT_ID,
         )
-    if resp.status_code != 200:
-        raise HTTPException(status_code=401, detail="Sesión Google inválida")
-    data = resp.json()
-    email = data.get("email")
-    name = data.get("name", "")
-    picture = data.get("picture")
-    session_token = data.get("session_token")
-    if not email or not session_token:
-        raise HTTPException(status_code=400, detail="Datos de sesión incompletos")
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=f"Token de Google inválido: {e}")
+
+    email = idinfo.get("email")
+    name = idinfo.get("name", "")
+    picture = idinfo.get("picture")
+
+    if not email:
+        raise HTTPException(status_code=400, detail="No se pudo obtener el email de Google")
+
+    session_token = str(uuid.uuid4())
 
     # Upsert user by email
     existing = await db.users.find_one({"email": email}, {"_id": 0})
