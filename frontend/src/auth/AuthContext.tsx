@@ -16,7 +16,7 @@ type AuthState = {
   user: User | null;
   token: string | null;
   loading: boolean;
-  signInWithToken: (sessionId: string) => Promise<void>;
+  signInWithToken: (idToken: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -78,11 +78,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkSession();
   }, [checkSession]);
 
-  const signInWithToken = useCallback(async (sessionId: string) => {
+  const signInWithToken = useCallback(async (idToken: string) => {
     const res = await fetch(`${BACKEND_URL}/api/auth/session`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: sessionId }),
+      body: JSON.stringify({ id_token: idToken }),
     });
     if (!res.ok) throw new Error("Login failed");
     const data = await res.json();
