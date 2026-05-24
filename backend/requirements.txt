@@ -6,5 +6,6 @@ pydantic==2.13.4
 python-dotenv==1.2.2
 httpx==0.28.1
 google-auth==2.52.0
+requests==2.32.3
 python-jose[cryptography]==3.5.0
 passlib==1.7.4
