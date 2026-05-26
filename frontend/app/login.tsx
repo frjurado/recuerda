@@ -3,41 +3,35 @@ import {
   View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as WebBrowser from "expo-web-browser";
-import { useIdTokenAuthRequest } from "expo-auth-session/providers/google";
+import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/auth/AuthContext";
 import { colors, hardShadow } from "@/src/theme";
 
-WebBrowser.maybeCompleteAuthSession();
-
-const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID!;
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID!,
+  offlineAccess: false,
+});
 
 export default function LoginScreen() {
   const { signInWithToken } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  const [request, response, promptAsync] = useIdTokenAuthRequest({
-    clientId: GOOGLE_CLIENT_ID,
-    scopes: ["openid", "profile", "email"],
-  });
-
-  React.useEffect(() => {
-    if (response?.type === "success") {
-      const { id_token } = response.params;
-      setLoading(true);
-      signInWithToken(id_token)
-        .catch((e: any) => Alert.alert("Error", e?.message || "Fallo al iniciar sesión"))
-        .finally(() => setLoading(false));
-    }
-  }, [response]);
-
   const handleGoogle = async () => {
     setLoading(true);
     try {
-      await promptAsync();
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const { idToken } = await GoogleSignin.getTokens();
+      if (!idToken) throw new Error("No se obtuvo el token de Google");
+      await signInWithToken(idToken);
     } catch (e: any) {
-      Alert.alert("Error", e?.message || "Fallo al iniciar sesión");
+      if (e.code === statusCodes.SIGN_IN_CANCELLED) {
+        // user cancelled, do nothing
+      } else {
+        Alert.alert("Error", e?.message || "Fallo al iniciar sesión");
+      }
+    } finally {
       setLoading(false);
     }
   };
@@ -59,7 +53,7 @@ export default function LoginScreen() {
       <TouchableOpacity
         style={[styles.googleBtn, hardShadow]}
         onPress={handleGoogle}
-        disabled={loading || !request}
+        disabled={loading}
         testID="btn-login-google"
       >
         {loading ? (
