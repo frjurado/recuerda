@@ -5,7 +5,11 @@
   "build": {
     "preview": {
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "env": {
+          "EXPO_PUBLIC_BACKEND_URL": "https://recuerda.onrender.com",
+          "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "378788543907-0hvkocm4oe7po2veeua05lppo241qmqm.apps.googleusercontent.com"
+        }
       }
     }
   }

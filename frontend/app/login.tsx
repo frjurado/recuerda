@@ -4,7 +4,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as WebBrowser from "expo-web-browser";
-import { useAuthRequest, ResponseType } from "expo-auth-session/providers/google";
+import { useIdTokenAuthRequest } from "expo-auth-session/providers/google";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/auth/AuthContext";
 import { colors, hardShadow } from "@/src/theme";
@@ -17,9 +17,8 @@ export default function LoginScreen() {
   const { signInWithToken } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  const [request, response, promptAsync] = useAuthRequest({
+  const [request, response, promptAsync] = useIdTokenAuthRequest({
     clientId: GOOGLE_CLIENT_ID,
-    responseType: ResponseType.IdToken,
     scopes: ["openid", "profile", "email"],
   });
 
