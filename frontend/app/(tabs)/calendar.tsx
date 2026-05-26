@@ -127,7 +127,7 @@ export default function CalendarScreen() {
                   ]}>
                     {d ?? ""}
                   </Text>
-                  {has && <View style={styles.dot} />}
+                  {has && <View style={styles.corner} />}
                 </TouchableOpacity>
               );
             })}
@@ -180,13 +180,13 @@ const styles = StyleSheet.create({
     fontSize: 11, fontWeight: "800", color: colors.textSecondary,
     letterSpacing: 1, textTransform: "uppercase",
   },
-  grid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 16 },
+  grid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 16, alignItems: 'flex-start' },
   cell: {
     width: `${100 / 7}%`,
     aspectRatio: 1,
     borderWidth: 1, borderColor: colors.borderSubtle,
     alignItems: "center", justifyContent: "center", backgroundColor: colors.surface,
-    borderRadius: 0,
+    borderRadius: 0, overflow: 'hidden',
   },
   cellHasEvent: { backgroundColor: colors.primary },
   cellSelected: { borderWidth: 3, borderColor: colors.border },
@@ -194,9 +194,12 @@ const styles = StyleSheet.create({
   cellText: { fontSize: 15, fontWeight: "700", color: colors.textPrimary },
   cellTextHasEvent: { fontWeight: "900" },
   cellTextSelected: { fontWeight: "900" },
-  dot: {
-    width: 4, height: 4, backgroundColor: colors.border,
-    position: "absolute", bottom: 4, borderRadius: 0,
+  corner: {
+    position: "absolute",
+    top: -6, right: -6,
+    width: 12, height: 12,
+    backgroundColor: colors.textPrimary,
+    transform: [{ rotate: "45deg" }],
   },
   detailsBlock: { padding: 24 },
   detailsTitle: { fontSize: 20, fontWeight: "900", color: colors.textPrimary, marginBottom: 12 },
