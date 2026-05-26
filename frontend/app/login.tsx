@@ -5,6 +5,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/src/auth/AuthContext";
 import { colors, hardShadow } from "@/src/theme";
 
@@ -15,6 +16,7 @@ GoogleSignin.configure({
 
 export default function LoginScreen() {
   const { signInWithToken } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const handleGoogle = async () => {
@@ -25,6 +27,7 @@ export default function LoginScreen() {
       const { idToken } = await GoogleSignin.getTokens();
       if (!idToken) throw new Error("No se obtuvo el token de Google");
       await signInWithToken(idToken);
+      router.replace("/(tabs)");
     } catch (e: any) {
       if (e.code === statusCodes.SIGN_IN_CANCELLED) {
         // user cancelled, do nothing
