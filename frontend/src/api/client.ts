@@ -25,6 +25,7 @@ export type Settings = {
   notifications_enabled: boolean;
   notification_hour: number;
   notification_minute: number;
+  day_start_hour: number;
 };
 
 async function apiFetch<T>(path: string, token: string, init?: RequestInit): Promise<T> {
@@ -55,7 +56,7 @@ export const api = {
   gradeReview: (token: string, card_id: string, grade: number) =>
     apiFetch<{ ok: boolean }>("/reviews/grade", token, {
       method: "POST",
-      body: JSON.stringify({ card_id, grade }),
+      body: JSON.stringify({ card_id, grade, utc_offset_minutes: -new Date().getTimezoneOffset() }),
     }),
   hasDue: (token: string) => apiFetch<{ count: number; has_due: boolean }>("/reviews/has-due", token),
   getSettings: (token: string) => apiFetch<Settings>("/settings", token),

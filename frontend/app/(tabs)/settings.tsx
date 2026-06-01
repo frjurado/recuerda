@@ -54,8 +54,10 @@ export default function SettingsScreen() {
   const [enabled, setEnabled] = useState(true);
   const [hour, setHour] = useState(9);
   const [minute, setMinute] = useState(0);
+  const [dayStartHour, setDayStartHour] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showPicker, setShowPicker] = useState(false);
+  const [showDayStartPicker, setShowDayStartPicker] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -64,6 +66,7 @@ export default function SettingsScreen() {
       setEnabled(s.notifications_enabled);
       setHour(s.notification_hour);
       setMinute(s.notification_minute);
+      setDayStartHour(s.day_start_hour ?? 0);
     } catch (e) {
       console.warn(e);
     } finally {
@@ -120,6 +123,14 @@ export default function SettingsScreen() {
       const ok = await requestPermissions();
       if (ok) await scheduleDailyReminder(h, m);
     }
+  };
+
+  const onDayStartChange = async (_e: any, selected?: Date) => {
+    setShowDayStartPicker(Platform.OS === "ios");
+    if (!selected || !token) return;
+    const h = selected.getHours();
+    setDayStartHour(h);
+    await api.updateSettings(token, { day_start_hour: h });
   };
 
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -213,6 +224,65 @@ export default function SettingsScreen() {
             </View>
           </View>
         )}
+
+        {enabled && !isExpoGo && hour < dayStartHour && (
+          <View style={[styles.warning, hardShadow]}>
+            <Ionicons name="warning" size={18} color="#B45309" />
+            <Text style={styles.warningText}>
+              La hora de notificación es anterior al inicio del día. Es posible que no tengas tarjetas disponibles al recibir el recordatorio.
+            </Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>Repaso</Text>
+
+        <TouchableOpacity
+          style={[styles.row, hardShadow]}
+          onPress={() => setShowDayStartPicker(true)}
+          testID="picker-day-start"
+        >
+          <View style={styles.rowLeft}>
+            <Ionicons name="sunny" size={20} color={colors.textPrimary} />
+            <Text style={styles.rowText}>El día empieza a las</Text>
+          </View>
+          <Text style={styles.rowValue}>{pad(dayStartHour)}:00</Text>
+        </TouchableOpacity>
+
+        {showDayStartPicker && (Platform.OS === "ios" || Platform.OS === "android") && (
+          <DateTimePicker
+            value={(() => { const d = new Date(); d.setHours(dayStartHour, 0, 0, 0); return d; })()}
+            mode="time"
+            is24Hour
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={onDayStartChange}
+            minuteInterval={60}
+          />
+        )}
+
+        {Platform.OS === "web" && showDayStartPicker && (
+          <View style={styles.webPickerWrap}>
+            <Text style={styles.webPickerLabel}>¿A qué hora empieza el día de repaso? (formato 24h):</Text>
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
+              {[0, 4, 6, 8, 10, 12, 14, 16, 18, 20].map((h) => (
+                <TouchableOpacity
+                  key={h}
+                  style={[styles.timeChip, h === dayStartHour && styles.timeChipActive]}
+                  onPress={async () => {
+                    setDayStartHour(h);
+                    if (token) await api.updateSettings(token, { day_start_hour: h });
+                    setShowDayStartPicker(false);
+                  }}
+                >
+                  <Text style={[styles.timeChipText, h === dayStartHour && styles.timeChipTextActive]}>
+                    {pad(h)}:00
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -254,6 +324,12 @@ const styles = StyleSheet.create({
     padding: 12, borderRadius: 0,
   },
   noticeText: { flex: 1, fontSize: 13, color: colors.textPrimary, lineHeight: 18 },
+  warning: {
+    flexDirection: "row", alignItems: "flex-start", gap: 10,
+    backgroundColor: "#FEF3C7", borderWidth: 2, borderColor: "#D97706",
+    padding: 12, borderRadius: 0,
+  },
+  warningText: { flex: 1, fontSize: 13, color: "#92400E", lineHeight: 18 },
   rowLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
   rowText: { fontSize: 15, fontWeight: "700", color: colors.textPrimary },
   rowValue: { fontSize: 15, fontWeight: "800", color: colors.secondary },

@@ -8,7 +8,7 @@ import uuid
 from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from datetime import datetime, timedelta, timezone, date
+from datetime import datetime, timedelta, timezone, date, time
 from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as google_requests
 
@@ -62,15 +62,18 @@ class SettingsUpdate(BaseModel):
     notifications_enabled: Optional[bool] = None
     notification_hour: Optional[int] = Field(default=None, ge=0, le=23)
     notification_minute: Optional[int] = Field(default=None, ge=0, le=59)
+    day_start_hour: Optional[int] = Field(default=None, ge=0, le=23)
 
 class SettingsOut(BaseModel):
     notifications_enabled: bool = True
     notification_hour: int = 9
     notification_minute: int = 0
+    day_start_hour: int = 0
 
 class ReviewGrade(BaseModel):
     card_id: str
     grade: int  # 0=Again, 1=Hard, 2=Good, 3=Easy
+    utc_offset_minutes: int = 0  # client sends: -new Date().getTimezoneOffset()
 
 class FlashCard(BaseModel):
     card_id: str
@@ -132,8 +135,12 @@ def days_until(day: int, month: int, today: date) -> int:
 
 # ---------------------- SM-2 Algorithm ----------------------
 
-def sm2_update(card: dict, grade: int) -> dict:
-    """SM-2 algorithm. grade: 0=Again, 1=Hard, 2=Good, 3=Easy."""
+def sm2_update(card: dict, grade: int, day_start_hour: int = 0, utc_offset_minutes: int = 0) -> dict:
+    """SM-2 algorithm. grade: 0=Again, 1=Hard, 2=Good, 3=Easy.
+
+    due_at is set to the start of the Nth local day (day_start_hour) converted to UTC,
+    so scheduling works per calendar day rather than per exact clock time.
+    """
     ef = card.get("ef", 2.5)
     interval = card.get("interval", 0)
     reps = card.get("repetitions", 0)
@@ -169,14 +176,20 @@ def sm2_update(card: dict, grade: int) -> dict:
         # Update EF using SM-2 formula refinement
         ef = max(1.3, ef + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)))
 
-    now = datetime.now(timezone.utc)
-    due_at = now + timedelta(days=interval)
+    now_utc = datetime.now(timezone.utc)
+    # Compute due_at as "day_start_hour on the Nth local calendar day from today"
+    now_local = now_utc + timedelta(minutes=utc_offset_minutes)
+    due_local_date = now_local.date() + timedelta(days=interval)
+    due_local_naive = datetime.combine(due_local_date, time(day_start_hour, 0))
+    due_at = due_local_naive - timedelta(minutes=utc_offset_minutes)
+    due_at = due_at.replace(tzinfo=timezone.utc)
+
     return {
         "ef": ef,
         "interval": interval,
         "repetitions": reps,
         "due_at": due_at,
-        "last_reviewed_at": now,
+        "last_reviewed_at": now_utc,
     }
 
 # ---------------------- Auth Routes ----------------------
@@ -445,7 +458,9 @@ async def grade_review(payload: ReviewGrade, authorization: Optional[str] = Head
     )
     if not card:
         raise HTTPException(status_code=404, detail="Tarjeta no encontrada")
-    update = sm2_update(card, payload.grade)
+    user_settings = await db.settings.find_one({"user_id": user["user_id"]}, {"_id": 0}) or {}
+    day_start_hour = user_settings.get("day_start_hour", 0)
+    update = sm2_update(card, payload.grade, day_start_hour=day_start_hour, utc_offset_minutes=payload.utc_offset_minutes)
     await db.flashcards.update_one(
         {"card_id": payload.card_id, "user_id": user["user_id"]},
         {"$set": update},
@@ -471,6 +486,7 @@ async def get_settings(authorization: Optional[str] = Header(default=None)):
         notifications_enabled=s.get("notifications_enabled", True),
         notification_hour=s.get("notification_hour", 9),
         notification_minute=s.get("notification_minute", 0),
+        day_start_hour=s.get("day_start_hour", 0),
     )
 
 @api_router.put("/settings", response_model=SettingsOut)
@@ -487,6 +503,7 @@ async def update_settings(payload: SettingsUpdate, authorization: Optional[str] 
         notifications_enabled=s.get("notifications_enabled", True),
         notification_hour=s.get("notification_hour", 9),
         notification_minute=s.get("notification_minute", 0),
+        day_start_hour=s.get("day_start_hour", 0),
     )
 
 # ---------------------- Health ----------------------
