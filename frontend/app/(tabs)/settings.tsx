@@ -35,7 +35,7 @@ async function scheduleDailyReminder(hour: number, minute: number) {
     await N.cancelAllScheduledNotificationsAsync();
     await N.scheduleNotificationAsync({
       content: {
-        title: "Recuerda",
+        title: "Recuérdame",
         body: "Tienes fechas que repasar hoy",
       },
       trigger: {

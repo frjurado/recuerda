@@ -42,7 +42,7 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.container} testID="login-screen">
       <View style={styles.brand}>
-        <Text style={styles.brandTitle}>Recuerda</Text>
+        <Text style={styles.brandTitle}>Recuérdame</Text>
         <Text style={styles.brandSubtitle}>Nunca olvides un cumpleaños</Text>
       </View>
 
