@@ -15,7 +15,7 @@ export type FlashCard = {
   event_day: number;
   event_month: number;
   event_type: string;
-  kind: "sm2_name" | "week_before" | "month_before" | "birthday";
+  kind: "sm2_name" | "day_before" | "week_before" | "month_before" | "birthday";
   question: string;
   answer: string;
   festive: boolean;
@@ -26,6 +26,9 @@ export type Settings = {
   notification_hour: number;
   notification_minute: number;
   day_start_hour: number;
+  reminder_day_before: boolean;
+  reminder_week_before: boolean;
+  reminder_month_before: boolean;
 };
 
 async function apiFetch<T>(path: string, token: string, init?: RequestInit): Promise<T> {

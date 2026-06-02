@@ -63,12 +63,18 @@ class SettingsUpdate(BaseModel):
     notification_hour: Optional[int] = Field(default=None, ge=0, le=23)
     notification_minute: Optional[int] = Field(default=None, ge=0, le=59)
     day_start_hour: Optional[int] = Field(default=None, ge=0, le=23)
+    reminder_day_before: Optional[bool] = None
+    reminder_week_before: Optional[bool] = None
+    reminder_month_before: Optional[bool] = None
 
 class SettingsOut(BaseModel):
     notifications_enabled: bool = True
     notification_hour: int = 9
     notification_minute: int = 0
     day_start_hour: int = 0
+    reminder_day_before: bool = False
+    reminder_week_before: bool = True
+    reminder_month_before: bool = True
 
 class ReviewGrade(BaseModel):
     card_id: str
@@ -374,10 +380,13 @@ async def build_due_cards(user_id: str) -> List[dict]:
             "festive": False,
         })
 
-    # 2) Calendar-triggered prompts (week_before, month_before, birthday)
-    # Check all user events
+    # 2) Calendar-triggered prompts (birthday, day_before, week_before, month_before)
+    settings = await db.settings.find_one({"user_id": user_id}, {"_id": 0}) or {}
+    reminder_day = settings.get("reminder_day_before", False)
+    reminder_week = settings.get("reminder_week_before", True)
+    reminder_month = settings.get("reminder_month_before", True)
+
     events = await db.events.find({"user_id": user_id}, {"_id": 0}).to_list(1000)
-    # Already-shown prompt log for today
     shown = await db.prompt_log.find(
         {"user_id": user_id, "date": today_iso},
         {"_id": 0},
@@ -386,19 +395,25 @@ async def build_due_cards(user_id: str) -> List[dict]:
 
     for ev in events:
         days = days_until(ev["day"], ev["month"], today)
+        is_bday = ev["type"] == "cumpleanos"
         if days == 0:
             kind = "birthday"
-            q = f"¡Hoy es el cumpleaños de {ev['name']}!" if ev["type"] == "cumpleanos" else f"¡Hoy es el {ev['type']} de {ev['name']}!"
-            a = "¡Llama o escribe para felicitar!"
+            q = "¿De quién es el cumpleaños hoy?" if is_bday else "¿Qué evento hay hoy?"
+            a = ev["name"]
             festive = True
-        elif days == 7:
-            kind = "week_before"
-            q = "¿Quién cumple años dentro de una semana?"
+        elif days == 1 and reminder_day:
+            kind = "day_before"
+            q = "¿Quién cumple años mañana?" if is_bday else "¿Quién tiene un evento mañana?"
             a = ev["name"]
             festive = False
-        elif days == 30:
+        elif days == 7 and reminder_week:
+            kind = "week_before"
+            q = "¿Quién cumple años dentro de una semana?" if is_bday else "¿Quién tiene un evento dentro de una semana?"
+            a = ev["name"]
+            festive = False
+        elif days == 30 and reminder_month:
             kind = "month_before"
-            q = "¿Quién cumple años dentro de un mes?"
+            q = "¿Quién cumple años dentro de un mes?" if is_bday else "¿Quién tiene un evento dentro de un mes?"
             a = ev["name"]
             festive = False
         else:
@@ -437,7 +452,7 @@ async def grade_review(payload: ReviewGrade, authorization: Optional[str] = Head
         # parse prompt_id: prompt_{event_id}_{kind}_{date}
         parts = payload.card_id.split("_", 1)[1]
         # event_id might contain hyphens; split by known kind suffixes
-        for kind in ["birthday", "week_before", "month_before"]:
+        for kind in ["birthday", "day_before", "week_before", "month_before"]:
             marker = f"_{kind}_{today_iso}"
             if parts.endswith(marker):
                 event_id = parts[: -len(marker)]
@@ -487,6 +502,9 @@ async def get_settings(authorization: Optional[str] = Header(default=None)):
         notification_hour=s.get("notification_hour", 9),
         notification_minute=s.get("notification_minute", 0),
         day_start_hour=s.get("day_start_hour", 0),
+        reminder_day_before=s.get("reminder_day_before", False),
+        reminder_week_before=s.get("reminder_week_before", True),
+        reminder_month_before=s.get("reminder_month_before", True),
     )
 
 @api_router.put("/settings", response_model=SettingsOut)
@@ -504,6 +522,9 @@ async def update_settings(payload: SettingsUpdate, authorization: Optional[str] 
         notification_hour=s.get("notification_hour", 9),
         notification_minute=s.get("notification_minute", 0),
         day_start_hour=s.get("day_start_hour", 0),
+        reminder_day_before=s.get("reminder_day_before", False),
+        reminder_week_before=s.get("reminder_week_before", True),
+        reminder_month_before=s.get("reminder_month_before", True),
     )
 
 # ---------------------- Health ----------------------

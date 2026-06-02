@@ -15,6 +15,7 @@ export default function ReviewScreen() {
   const [cards, setCards] = useState<FlashCard[]>([]);
   const [idx, setIdx] = useState(0);
   const [revealed, setRevealed] = useState(false);
+  const [revealedFestive, setRevealedFestive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -25,6 +26,7 @@ export default function ReviewScreen() {
       setCards(data);
       setIdx(0);
       setRevealed(false);
+      setRevealedFestive(false);
     } catch (e) {
       console.warn(e);
     } finally {
@@ -49,6 +51,7 @@ export default function ReviewScreen() {
     if (idx + 1 < cards.length) {
       setIdx(idx + 1);
       setRevealed(false);
+      setRevealedFestive(false);
     } else {
       // refresh in case more became due
       load();
@@ -65,6 +68,7 @@ export default function ReviewScreen() {
     if (idx + 1 < cards.length) {
       setIdx(idx + 1);
       setRevealed(false);
+      setRevealedFestive(false);
     } else {
       load();
     }
@@ -109,37 +113,56 @@ export default function ReviewScreen() {
           <Text style={styles.subtitle}>{idx + 1} / {cards.length}</Text>
         </View>
         <View style={styles.body}>
-          <View style={[styles.flashcard, styles.festiveCard, hardShadow]} testID="festive-card">
-            <Text style={styles.festiveEmoji}>🎂</Text>
-            <Text style={styles.festiveName}>{current.event_name}</Text>
-            <Text style={styles.festiveTagline}>¡Hoy es el día!</Text>
-            <Text style={styles.festiveBody}>Llama o escribe para felicitar</Text>
-          </View>
-          <View style={styles.festiveActions}>
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: colors.call }, hardShadow]}
-              onPress={() => Linking.openURL("tel:")}
-              testID="btn-call"
-            >
-              <Ionicons name="call" size={22} color="#fff" />
-              <Text style={styles.actionTextWhite}>Llamar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: colors.message }, hardShadow]}
-              onPress={() => Linking.openURL("sms:")}
-              testID="btn-message"
-            >
-              <Ionicons name="chatbubble-ellipses" size={22} color="#fff" />
-              <Text style={styles.actionTextWhite}>Escribir</Text>
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity
-            style={[styles.secondaryBtn, hardShadow]}
-            onPress={handleDismissFestive}
-            testID="btn-dismiss-festive"
-          >
-            <Text style={styles.secondaryBtnText}>Continuar</Text>
-          </TouchableOpacity>
+          {!revealedFestive ? (
+            <>
+              <View style={[styles.flashcard, styles.festiveCard, hardShadow]} testID="festive-card">
+                <Text style={styles.festiveEmoji}>🎂</Text>
+                <Text style={styles.kindLabel}>¡Hoy!</Text>
+                <Text style={styles.question} testID="card-question">{current.question}</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.revealBtn, hardShadow]}
+                onPress={() => setRevealedFestive(true)}
+                testID="btn-reveal-festive"
+              >
+                <Text style={styles.revealText}>Ver respuesta</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <View style={[styles.flashcard, styles.festiveCard, hardShadow]} testID="festive-card">
+                <Text style={styles.festiveEmoji}>🎂</Text>
+                <Text style={styles.festiveName}>{current.event_name}</Text>
+                <Text style={styles.festiveTagline}>¡Hoy es el día!</Text>
+                <Text style={styles.festiveBody}>Llama o escribe para felicitar</Text>
+              </View>
+              <View style={styles.festiveActions}>
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: colors.call }, hardShadow]}
+                  onPress={() => Linking.openURL("tel:")}
+                  testID="btn-call"
+                >
+                  <Ionicons name="call" size={22} color="#fff" />
+                  <Text style={styles.actionTextWhite}>Llamar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: colors.message }, hardShadow]}
+                  onPress={() => Linking.openURL("sms:")}
+                  testID="btn-message"
+                >
+                  <Ionicons name="chatbubble-ellipses" size={22} color="#fff" />
+                  <Text style={styles.actionTextWhite}>Escribir</Text>
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity
+                style={[styles.secondaryBtn, hardShadow]}
+                onPress={handleDismissFestive}
+                testID="btn-dismiss-festive"
+              >
+                <Text style={styles.secondaryBtnText}>Continuar</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </SafeAreaView>
     );
@@ -155,6 +178,7 @@ export default function ReviewScreen() {
         <View style={[styles.flashcard, hardShadow]} testID="flashcard">
           <Text style={styles.kindLabel}>
             {current.kind === "sm2_name" ? "Memoriza la fecha" :
+              current.kind === "day_before" ? "Mañana" :
               current.kind === "week_before" ? "Dentro de 1 semana" :
               current.kind === "month_before" ? "Dentro de 1 mes" : "Recordatorio"}
           </Text>

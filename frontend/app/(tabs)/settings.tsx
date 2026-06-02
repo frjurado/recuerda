@@ -7,7 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useAuth } from "@/src/auth/AuthContext";
-import { api } from "@/src/api/client";
+import { api, Settings } from "@/src/api/client";
 import { colors, hardShadow } from "@/src/theme";
 
 // Detect Expo Go: scheduled notifications were removed from Expo Go in SDK 53+.
@@ -55,6 +55,9 @@ export default function SettingsScreen() {
   const [hour, setHour] = useState(9);
   const [minute, setMinute] = useState(0);
   const [dayStartHour, setDayStartHour] = useState(0);
+  const [reminderDayBefore, setReminderDayBefore] = useState(false);
+  const [reminderWeekBefore, setReminderWeekBefore] = useState(true);
+  const [reminderMonthBefore, setReminderMonthBefore] = useState(true);
   const [loading, setLoading] = useState(true);
   const [showPicker, setShowPicker] = useState(false);
   const [showDayStartPicker, setShowDayStartPicker] = useState(false);
@@ -67,6 +70,9 @@ export default function SettingsScreen() {
       setHour(s.notification_hour);
       setMinute(s.notification_minute);
       setDayStartHour(s.day_start_hour ?? 0);
+      setReminderDayBefore(s.reminder_day_before ?? false);
+      setReminderWeekBefore(s.reminder_week_before ?? true);
+      setReminderMonthBefore(s.reminder_month_before ?? true);
     } catch (e) {
       console.warn(e);
     } finally {
@@ -286,6 +292,34 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionLabel}>Recordatorios previos</Text>
+        <Text style={styles.sectionHint}>
+          Recibirás una tarjeta flashcard preguntando sobre el evento antes de que llegue.
+        </Text>
+        {(
+          [
+            { key: "day", label: "1 día antes", value: reminderDayBefore, setter: setReminderDayBefore, field: "reminder_day_before" },
+            { key: "week", label: "1 semana antes", value: reminderWeekBefore, setter: setReminderWeekBefore, field: "reminder_week_before" },
+            { key: "month", label: "1 mes antes", value: reminderMonthBefore, setter: setReminderMonthBefore, field: "reminder_month_before" },
+          ] as const
+        ).map(({ key, label, value, setter, field }) => (
+          <View key={key} style={[styles.row, hardShadow]}>
+            <Text style={styles.rowText}>{label}</Text>
+            <Switch
+              value={value}
+              onValueChange={async (v) => {
+                setter(v);
+                if (token) await api.updateSettings(token, { [field]: v } as Partial<Settings>);
+              }}
+              trackColor={{ true: colors.good, false: colors.borderSubtle }}
+              thumbColor={colors.surface}
+              testID={`toggle-reminder-${key}`}
+            />
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.section}>
         <TouchableOpacity
           style={[styles.row, hardShadow]}
           onPress={signOut}
@@ -311,6 +345,9 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 11, fontWeight: "800", letterSpacing: 1, color: colors.textSecondary,
     textTransform: "uppercase",
+  },
+  sectionHint: {
+    fontSize: 12, color: colors.textSecondary, lineHeight: 17,
   },
   row: {
     backgroundColor: colors.surface, borderWidth: 2, borderColor: colors.border,
