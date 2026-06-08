@@ -7,6 +7,7 @@ import { useFonts } from "expo-font";
 import { Ionicons } from "@expo/vector-icons";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { AuthProvider } from "@/src/auth/AuthContext";
+import { DevModeProvider } from "@/src/devmode/DevModeContext";
 import { colors } from "@/src/theme";
 
 export default function RootLayout() {
@@ -27,12 +28,14 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="event-form" options={{ presentation: "modal" }} />
-        </Stack>
-      </AuthProvider>
+      <DevModeProvider>
+        <AuthProvider>
+          <StatusBar style="dark" />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="event-form" options={{ presentation: "modal" }} />
+          </Stack>
+        </AuthProvider>
+      </DevModeProvider>
     </SafeAreaProvider>
   );
 }

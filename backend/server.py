@@ -57,6 +57,7 @@ class EventOut(BaseModel):
     day: int
     month: int
     type: str
+    next_review_days: Optional[int] = None
 
 class SettingsUpdate(BaseModel):
     notifications_enabled: Optional[bool] = None
@@ -92,6 +93,7 @@ class FlashCard(BaseModel):
     question: str
     answer: str
     festive: bool = False
+    grade_intervals: Optional[dict] = None  # {0: days, 1: days, 2: days, 3: days} for sm2_name cards
 
 # ---------------------- Helpers ----------------------
 
@@ -198,6 +200,40 @@ def sm2_update(card: dict, grade: int, day_start_hour: int = 0, utc_offset_minut
         "last_reviewed_at": now_utc,
     }
 
+def sm2_preview_interval(card: dict, grade: int) -> int:
+    """Return the interval in days that sm2_update would produce for the given grade."""
+    ef = card.get("ef", 2.5)
+    interval = card.get("interval", 0)
+    reps = card.get("repetitions", 0)
+
+    if grade == 0:
+        return 1
+    if grade == 1:
+        ef_adj = max(1.3, ef - 0.15)
+        if reps == 0:
+            interval = 1
+        elif reps == 1:
+            interval = 6
+        else:
+            interval = max(1, round(interval * ef_adj))
+        return max(1, round(interval * 0.7))
+    if grade == 2:
+        if reps == 0:
+            return 1
+        elif reps == 1:
+            return 6
+        else:
+            return max(1, round(interval * ef))
+    # grade == 3 (Easy)
+    ef_adj = ef + 0.15
+    if reps == 0:
+        interval = 1
+    elif reps == 1:
+        interval = 6
+    else:
+        interval = max(1, round(interval * ef_adj))
+    return max(1, round(interval * 1.3))
+
 # ---------------------- Auth Routes ----------------------
 
 @api_router.post("/auth/session")
@@ -284,7 +320,30 @@ async def auth_logout(authorization: Optional[str] = Header(default=None)):
 async def list_events(authorization: Optional[str] = Header(default=None)):
     user = await get_user_from_token(authorization)
     items = await db.events.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(1000)
-    return [EventOut(id=i["event_id"], name=i["name"], day=i["day"], month=i["month"], type=i["type"]) for i in items]
+
+    event_ids = [i["event_id"] for i in items]
+    cards_by_event: dict = {}
+    if event_ids:
+        cursor = db.flashcards.find(
+            {"event_id": {"$in": event_ids}, "user_id": user["user_id"]},
+            {"_id": 0, "event_id": 1, "due_at": 1},
+        )
+        cards_by_event = {c["event_id"]: c async for c in cursor}
+
+    today = datetime.now(timezone.utc).date()
+    result = []
+    for i in items:
+        card = cards_by_event.get(i["event_id"])
+        if card and card.get("due_at"):
+            due = normalize_dt(card["due_at"])
+            next_review_days = (due.date() - today).days
+        else:
+            next_review_days = None
+        result.append(EventOut(
+            id=i["event_id"], name=i["name"], day=i["day"], month=i["month"],
+            type=i["type"], next_review_days=next_review_days,
+        ))
+    return result
 
 @api_router.post("/events", response_model=EventOut)
 async def create_event(payload: EventCreate, authorization: Optional[str] = Header(default=None)):
@@ -378,6 +437,7 @@ async def build_due_cards(user_id: str) -> List[dict]:
             "question": f"¿Cuándo es el cumpleaños de {ev['name']}?" if ev["type"] == "cumpleanos" else f"¿Cuándo es el evento de {ev['name']}?",
             "answer": format_date_es(ev["day"], ev["month"]),
             "festive": False,
+            "grade_intervals": {g: sm2_preview_interval(c, g) for g in range(4)},
         })
 
     # 2) Calendar-triggered prompts (birthday, day_before, week_before, month_before)

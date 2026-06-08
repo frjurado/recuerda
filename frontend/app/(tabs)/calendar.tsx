@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/auth/AuthContext";
+import { useDevMode } from "@/src/devmode/DevModeContext";
 import { api, EventItem } from "@/src/api/client";
 import { colors, hardShadow, MONTHS_ES, formatDateEs } from "@/src/theme";
 
@@ -22,6 +23,7 @@ function firstWeekdayMon(year: number, month0: number) {
 
 export default function CalendarScreen() {
   const { token } = useAuth();
+  const { devMode } = useDevMode();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const now = new Date();
@@ -153,6 +155,21 @@ export default function CalendarScreen() {
                   </View>
                 ))
               )}
+              {devMode && (() => {
+                const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                const selMidnight = new Date(year, month, selectedDay);
+                const daysUntilSel = Math.round((selMidnight.getTime() - todayMidnight.getTime()) / 86400000);
+                const scheduled = events.filter((e) => e.next_review_days === daysUntilSel);
+                if (scheduled.length === 0) return null;
+                return (
+                  <View style={styles.devSection}>
+                    <Text style={styles.devSectionLabel}>REPASOS PROGRAMADOS</Text>
+                    {scheduled.map((ev) => (
+                      <Text key={ev.id} style={styles.devReviewItem}>{ev.name}</Text>
+                    ))}
+                  </View>
+                );
+              })()}
             </View>
           )}
         </ScrollView>
@@ -210,4 +227,10 @@ const styles = StyleSheet.create({
     padding: 14, marginBottom: 10, borderRadius: 0,
   },
   detailName: { fontSize: 16, fontWeight: "800", color: colors.textPrimary },
+  devSection: { marginTop: 16 },
+  devSectionLabel: {
+    fontSize: 11, fontWeight: "800", letterSpacing: 1, color: "#94a3b8",
+    textTransform: "uppercase", marginBottom: 8,
+  },
+  devReviewItem: { fontSize: 13, color: "#94a3b8", fontWeight: "600", marginBottom: 4 },
 });

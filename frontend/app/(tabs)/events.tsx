@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/auth/AuthContext";
+import { useDevMode } from "@/src/devmode/DevModeContext";
 import { api, EventItem } from "@/src/api/client";
 import { colors, hardShadow, formatDateEs } from "@/src/theme";
 
@@ -18,6 +19,7 @@ const TYPE_LABEL: Record<string, string> = {
 export default function EventsScreen() {
   const router = useRouter();
   const { token } = useAuth();
+  const { devMode } = useDevMode();
   const [items, setItems] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -96,6 +98,11 @@ export default function EventsScreen() {
                 <Text style={styles.rowName}>{item.name}</Text>
                 <Text style={styles.rowDate}>{formatDateEs(item.day, item.month)}</Text>
                 <Text style={styles.rowType}>{TYPE_LABEL[item.type] || item.type}</Text>
+                {devMode && item.next_review_days != null && (
+                  <Text style={styles.devHint}>
+                    {item.next_review_days <= 0 ? "Repaso: hoy" : `Repaso: en ${item.next_review_days}d`}
+                  </Text>
+                )}
               </View>
               <View style={styles.rowActions}>
                 <TouchableOpacity
@@ -146,6 +153,7 @@ const styles = StyleSheet.create({
     fontSize: 10, color: colors.textSecondary, marginTop: 4, fontWeight: "800",
     textTransform: "uppercase", letterSpacing: 1,
   },
+  devHint: { fontSize: 11, color: "#94a3b8", fontWeight: "600", marginTop: 4 },
   rowActions: { flexDirection: "row", gap: 8 },
   iconBtn: {
     borderWidth: 2, borderColor: colors.border, padding: 8, borderRadius: 0,

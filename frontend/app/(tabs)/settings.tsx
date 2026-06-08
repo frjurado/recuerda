@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, Switch, Platform, Alert, ActivityIndicator,
 } from "react-native";
@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useAuth } from "@/src/auth/AuthContext";
+import { useDevMode } from "@/src/devmode/DevModeContext";
 import { api, Settings } from "@/src/api/client";
 import { colors, hardShadow } from "@/src/theme";
 
@@ -51,6 +52,8 @@ async function scheduleDailyReminder(hour: number, minute: number) {
 
 export default function SettingsScreen() {
   const { token, user, signOut } = useAuth();
+  const { devMode, toggleDevMode } = useDevMode();
+  const tapCount = useRef(0);
   const [enabled, setEnabled] = useState(true);
   const [hour, setHour] = useState(9);
   const [minute, setMinute] = useState(0);
@@ -331,6 +334,28 @@ export default function SettingsScreen() {
           </View>
         </TouchableOpacity>
       </View>
+
+      <View style={styles.authorshipSection}>
+        <TouchableOpacity
+          onPress={() => {
+            tapCount.current += 1;
+            const remaining = 7 - tapCount.current;
+            if (remaining > 0 && remaining <= 3) {
+              Alert.alert("", `${remaining} ${remaining === 1 ? "paso más" : "pasos más"} para el modo desarrollador`);
+            } else if (tapCount.current >= 7) {
+              tapCount.current = 0;
+              toggleDevMode();
+              Alert.alert("Modo desarrollador", devMode ? "Desactivado" : "Activado");
+            }
+          }}
+          activeOpacity={0.6}
+        >
+          <Text style={styles.authorshipText}>Recuérdame · Hecho con ♥</Text>
+        </TouchableOpacity>
+        {devMode && (
+          <Text style={styles.devModeActive}>Modo desarrollador: activo</Text>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -379,4 +404,7 @@ const styles = StyleSheet.create({
   timeChipActive: { backgroundColor: colors.primary },
   timeChipText: { fontWeight: "800", color: colors.textPrimary },
   timeChipTextActive: { color: colors.textPrimary },
+  authorshipSection: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16, alignItems: "center" },
+  authorshipText: { fontSize: 12, color: colors.textSecondary, fontWeight: "600" },
+  devModeActive: { fontSize: 11, color: colors.good, fontWeight: "700", marginTop: 4 },
 });

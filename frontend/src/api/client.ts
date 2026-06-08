@@ -6,6 +6,7 @@ export type EventItem = {
   day: number;
   month: number;
   type: string;
+  next_review_days?: number | null;
 };
 
 export type FlashCard = {
@@ -19,6 +20,7 @@ export type FlashCard = {
   question: string;
   answer: string;
   festive: boolean;
+  grade_intervals?: Record<number, number>;
 };
 
 export type Settings = {

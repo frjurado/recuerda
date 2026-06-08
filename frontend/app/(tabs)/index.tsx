@@ -7,11 +7,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/auth/AuthContext";
+import { useDevMode } from "@/src/devmode/DevModeContext";
 import { api, FlashCard } from "@/src/api/client";
 import { colors, hardShadow, formatDateEs } from "@/src/theme";
 
 export default function ReviewScreen() {
   const { token, user } = useAuth();
+  const { devMode } = useDevMode();
   const [cards, setCards] = useState<FlashCard[]>([]);
   const [idx, setIdx] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -203,34 +205,27 @@ export default function ReviewScreen() {
           </TouchableOpacity>
         ) : current.kind === "sm2_name" ? (
           <View style={styles.gradeRow}>
-            <TouchableOpacity
-              style={[styles.gradeBtn, { backgroundColor: colors.again }]}
-              onPress={() => handleGrade(0)}
-              testID="btn-grade-again"
-            >
-              <Text style={styles.gradeTextWhite}>Otra vez</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.gradeBtn, { backgroundColor: colors.hard }]}
-              onPress={() => handleGrade(1)}
-              testID="btn-grade-hard"
-            >
-              <Text style={styles.gradeText}>Difícil</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.gradeBtn, { backgroundColor: colors.good }]}
-              onPress={() => handleGrade(2)}
-              testID="btn-grade-good"
-            >
-              <Text style={styles.gradeText}>Bien</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.gradeBtn, { backgroundColor: colors.easy }]}
-              onPress={() => handleGrade(3)}
-              testID="btn-grade-easy"
-            >
-              <Text style={styles.gradeTextWhite}>Fácil</Text>
-            </TouchableOpacity>
+            {([
+              { grade: 0, label: "Otra vez", bg: colors.again, textStyle: styles.gradeTextWhite, testID: "btn-grade-again" },
+              { grade: 1, label: "Difícil",  bg: colors.hard,  textStyle: styles.gradeText,      testID: "btn-grade-hard"  },
+              { grade: 2, label: "Bien",     bg: colors.good,  textStyle: styles.gradeText,      testID: "btn-grade-good"  },
+              { grade: 3, label: "Fácil",    bg: colors.easy,  textStyle: styles.gradeTextWhite, testID: "btn-grade-easy"  },
+            ] as const).map(({ grade, label, bg, textStyle, testID }) => (
+              <View key={grade} style={styles.gradeBtnWrap}>
+                <TouchableOpacity
+                  style={[styles.gradeBtn, { backgroundColor: bg }]}
+                  onPress={() => handleGrade(grade)}
+                  testID={testID}
+                >
+                  <Text style={textStyle}>{label}</Text>
+                </TouchableOpacity>
+                {devMode && current.grade_intervals != null && (
+                  <Text style={styles.devHint}>
+                    {current.grade_intervals[grade]}d
+                  </Text>
+                )}
+              </View>
+            ))}
           </View>
         ) : (
           <TouchableOpacity
@@ -285,12 +280,14 @@ const styles = StyleSheet.create({
   },
   revealText: { fontSize: 16, fontWeight: "800", color: colors.textPrimary, letterSpacing: 0.5 },
   gradeRow: { flexDirection: "row", gap: 8, marginTop: 16 },
+  gradeBtnWrap: { flex: 1, alignItems: "center" },
   gradeBtn: {
-    flex: 1, borderWidth: 2, borderColor: colors.border, paddingVertical: 16,
+    width: "100%", borderWidth: 2, borderColor: colors.border, paddingVertical: 16,
     alignItems: "center", borderRadius: 0,
   },
   gradeText: { fontWeight: "800", color: colors.textPrimary, fontSize: 13 },
   gradeTextWhite: { fontWeight: "800", color: "#fff", fontSize: 13 },
+  devHint: { fontSize: 11, color: "#94a3b8", fontWeight: "600", marginTop: 4 },
   festiveActions: { flexDirection: "row", gap: 12, marginTop: 16 },
   actionBtn: {
     flex: 1, borderWidth: 2, borderColor: colors.border, paddingVertical: 16,
