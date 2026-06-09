@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  View, Text, StyleSheet, TouchableOpacity, Switch, Platform, Alert, ActivityIndicator,
+  View, Text, StyleSheet, TouchableOpacity, Switch, Platform, Alert, ActivityIndicator, ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -154,6 +154,7 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]} testID="settings-screen">
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Ajustes</Text>
         <Text style={styles.subtitle}>{user?.email}</Text>
@@ -356,12 +357,14 @@ export default function SettingsScreen() {
           <Text style={styles.devModeActive}>Modo desarrollador: activo</Text>
         )}
       </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  scrollContent: { paddingBottom: 32 },
   center: { alignItems: "center", justifyContent: "center" },
   header: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 8 },
   title: { fontSize: 32, fontWeight: "900", color: colors.textPrimary, letterSpacing: -1 },
